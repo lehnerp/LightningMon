@@ -1,0 +1,78 @@
+{
+  "monitoring": {
+    "center_lat": 49,
+    "center_lon": 20,
+    "max_radius_km": 100.0,
+    "window_seconds": 600,
+    "history_retention_days": 30,
+    "send_interval_seconds": 30
+  },
+  "zabbix": {
+    "enabled": true,
+    "server": "localhost",
+    "host": "lightning-monitor"
+  },
+  "lightningmaps": {
+    "ws_url": "wss://live2.lightningmaps.org/"
+  },
+  "web": {
+    "host": "0.0.0.0",
+    "port": 8097,
+    "allow_config_write": true,
+    "allow_restart": true,
+    "admin_password": ""
+  },
+  "smtp": {
+    "enabled": true,
+    "send_startup_email": true,
+    "server": "localhost",
+    "port": 25,
+    "mail_from": "lightning@example.local",
+    "mail_to": "you@example.com"
+  },
+  "alerts": {
+    "warning_radius_km": 25.0,
+    "critical_radius_km": 10.0,
+    "warning_cooldown_seconds": 1800,
+    "critical_cooldown_seconds": 900,
+    "max_strike_age_seconds": 180
+  },
+  "database": {
+    "path": "lightning.db"
+  },
+  "map": {
+    "sat_tile_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    "snapshot_zoom": 9,
+    "snapshot_width": 900,
+    "snapshot_height": 620,
+    "tile_size": 256,
+    "font_path": ""
+  },
+  "geocoding": {
+    "enabled": true,
+    "url": "https://nominatim.openstreetmap.org/reverse",
+    "user_agent": "lightning-monitor/2.0 (you@example.com)",
+    "timeout_seconds": 6,
+    "min_interval_seconds": 1.1,
+    "cache_decimals": 3,
+    "backfill_history_on_start": true,
+    "backfill_batch_size": 250,
+    "queue_maxsize": 2000
+  },
+  "localization": {
+    "default_language": "en",
+    "email_language": "en"
+  },
+  "intelligence": {
+    "analysis_window_minutes": 30,
+    "trend_slice_minutes": 10,
+    "approaching_delta_km": 5.0,
+    "activity_increase_ratio": 1.5,
+    "burst_count_25km_10min": 5,
+    "significant_closer_km": 5.0,
+    "min_smart_resend_seconds": 300,
+    "ws_stale_seconds": 120,
+    "geocoder_retry_attempts": 3,
+    "geocoder_retry_backoff_seconds": 15
+  }
+}

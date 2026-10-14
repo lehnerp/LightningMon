@@ -1,0 +1,17 @@
+# Example only. Prefer ./install-systemd.sh, which generates the service
+# with the current project directory and current login user automatically.
+[Unit]
+Description=LightningMaps Zabbix + Web Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+ExecStart=/ABSOLUTE/PATH/TO/lightning_dashboard_8097/run.sh
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Lightning Monitor</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b1020'/%3E%3Cpath d='M18 3 7 18h7l-2 11 11-15h-7z' fill='%23ffbd43'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/static/style.css?v={{ version }}">
+  <script>try{var th=localStorage.getItem('lightning-theme');if(th)document.documentElement.dataset.theme=th;}catch(e){}</script>
+</head>
+<body>
+<div class="shell">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h5.5L9 22l9-12h-5.5z"/></svg></div>
+      <div><h1>Lightning <b>Monitor</b></h1><p data-i18n="subtitle">Live LightningMaps / Blitzortung monitoring · Zabbix · SMTP</p></div>
+    </div>
+    <div class="header-right">
+      <div id="language-control" class="lang-toggle" aria-label="Language">
+        <button type="button" class="lang-button" data-lang="en" aria-pressed="false"><b>EN</b><span>English</span></button>
+        <button type="button" class="lang-button" data-lang="cs" aria-pressed="false"><b>CZ</b><span>Čeština</span></button>
+      </div>
+      <button id="settings-toggle" class="theme-toggle" type="button" title="Settings"><span aria-hidden="true">⚙</span><span class="btn-label" data-i18n="settings">Settings</span></button>
+      <button id="theme-toggle" class="theme-toggle" type="button"><span id="theme-icon" aria-hidden="true">☀</span><span id="theme-label" class="btn-label">Light mode</span></button>
+      <div id="live-chip" class="live-chip"><i></i><span id="live-label">LIVE</span><span class="live-divider">·</span><span id="clock">--:--:--</span></div>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><div class="stat-icon bolt">↯</div><div><small data-i18n="strikes10">STRIKES · 10 MIN</small><strong id="sum-strikes">0</strong><span id="inside-radius">within 100 km</span></div></div>
+    <div class="stat"><div class="stat-icon target">◎</div><div><small data-i18n="closest10">CLOSEST STRIKE · 10 MIN</small><strong id="sum-closest">—</strong><span data-i18n="distancePoint">distance from monitored point</span></div></div>
+    <div class="stat"><div class="stat-icon time">◷</div><div><small data-i18n="lastStrike">LAST STRIKE</small><strong id="sum-last">—</strong><span id="sum-last-detail">No strike recorded</span></div></div>
+    <div class="stat"><div class="stat-icon mail">✉</div><div class="stat-text"><small>SMTP</small><strong id="sum-mail">—</strong><span data-i18n="lastNotification">last email notification</span></div></div>
+  </section>
+
+  <section class="intelligence-grid" aria-label="Storm intelligence">
+    <div class="intel-card"><small data-i18n="stormTrend">STORM TREND</small><strong id="intel-trend">—</strong><span id="intel-trend-detail">—</span></div>
+    <div class="intel-card"><small data-i18n="activityTrend">ACTIVITY</small><strong id="intel-activity">—</strong><span id="intel-activity-detail">—</span></div>
+    <div class="intel-card"><small data-i18n="nearbyActivity">NEARBY ACTIVITY</small><strong id="intel-count25">0</strong><span id="within-warn">strikes within 25 km / 10 min</span></div>
+    <div class="intel-card"><small data-i18n="systemHealth">SYSTEM HEALTH</small><strong id="health-overall">—</strong><span id="health-detail" class="chips">—</span></div>
+  </section>
+
+  <section class="section map-section">
+    <div class="section-title">
+      <div><span data-i18n="liveArea">LIVE MAP</span><h2 data-i18n="satelliteMap">Lightning activity</h2></div>
+      <div class="filters">
+        <select id="range-filter" aria-label="Time range"><option value="10" data-i18n="r10m">10 minutes</option><option value="60" selected data-i18n="r1h">1 hour</option><option value="360" data-i18n="r6h">6 hours</option><option value="1440" data-i18n="r24h">24 hours</option><option value="10080" data-i18n="r7d">7 days</option><option value="43200" data-i18n="r30d">30 days</option></select>
+        <button id="recenter" class="snapshot-button" type="button" data-i18n="recenter">Recenter</button>
+        <a id="snapshot-link" class="snapshot-button" href="/api/snapshot/latest.png" target="_blank" rel="noopener" data-i18n="latestSnapshot">Open snapshot</a>
+      </div>
+    </div>
+    <div id="map"></div>
+    <div class="map-legend">
+      <span><i class="dot center"></i><span data-i18n="monitoredPoint">monitored point</span></span>
+      <span><i class="dot critical"></i><span id="legend-critical">≤ 10 km critical</span></span>
+      <span><i class="dot warning"></i><span id="legend-warning">≤ 25 km warning</span></span>
+      <span><i class="dot strike"></i><span data-i18n="lightningStrike">lightning strike</span></span>
+      <span><i class="dot newest"></i><span data-i18n="newestStrike">newest strike</span></span>
+    </div>
+  </section>
+
+  <section class="section timeline-section">
+    <div class="section-title">
+      <div><span data-i18n="timeline">ACTIVITY TIMELINE</span><h2 data-i18n="strikesOverTime">Strikes over time</h2></div>
+      <div class="timeline-key">
+        <span><i class="dot critical"></i><span data-i18n="critical">CRITICAL</span></span>
+        <span><i class="dot warning"></i><span data-i18n="warning">WARNING</span></span>
+        <span><i class="dot other"></i><span data-i18n="otherLegend">further away</span></span>
+      </div>
+    </div>
+    <div id="timeline-chart" class="timeline-chart"></div>
+    <div id="timeline-meta" class="timeline-meta"></div>
+  </section>
+
+  <section class="history">
+    <div class="history-top"><div><span data-i18n="strikeLog">STRIKE HISTORY</span><h2 data-i18n="recentDetections">Recent detections</h2></div><div class="small-status"><i id="ws-dot" class="status-dot"></i><span id="ws-status">WebSocket —</span></div></div>
+    <div class="table-scroll"><table><thead><tr><th data-i18n="observed">Observed</th><th data-i18n="distance">Distance</th><th data-i18n="locality">Locality</th><th data-i18n="latitude">Latitude</th><th data-i18n="longitude">Longitude</th><th data-i18n="zone">Zone</th></tr></thead><tbody id="events"><tr><td colspan="6" class="empty" data-i18n="waiting">Waiting for lightning data…</td></tr></tbody></table></div>
+    <div id="table-note" class="table-note"></div>
+  </section>
+
+  <footer><span data-i18n="footerNotice">Community-sourced lightning data. Do not use this dashboard as an official severe-weather or life-safety warning service.</span> <span id="version" class="version"></span></footer>
+</div>
+
+<div id="settings-modal" class="modal-backdrop" hidden>
+  <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="settings-head">
+      <div><small data-i18n="configuration">CONFIGURATION</small><h2 id="settings-title" data-i18n="runtimeSettings">Runtime settings</h2></div>
+      <button id="settings-close" class="icon-button" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="settings-body">
+      <p class="settings-help" data-i18n="settingsHelp">Edit the complete configuration here. Changes are written to config.json; safe settings are applied immediately.</p>
+      <div class="settings-path"><span data-i18n="configFile">Config file</span>: <code id="config-path">—</code></div>
+      <textarea id="config-editor" spellcheck="false" aria-label="JSON configuration"></textarea>
+      <div id="settings-message" class="settings-message" aria-live="polite"></div>
+    </div>
+    <div class="settings-actions">
+      <button id="settings-reset" class="secondary-button" type="button" data-i18n="reloadConfig">Reload</button>
+      <button id="settings-restart" class="danger-button" type="button" data-i18n="restartMonitor">Restart monitor</button>
+      <button id="settings-save-restart" class="secondary-button" type="button" data-i18n="saveRestart">Save & restart</button>
+      <button id="settings-save" class="primary-button" type="button" data-i18n="saveApply">Save & apply</button>
+    </div>
+  </section>
+</div>
+<script>
+window.MONITOR = {
+  lat: {{ center_lat|tojson }}, lon: {{ center_lon|tojson }},
+  max: {{ max_radius|tojson }}, warning: {{ warning_radius|tojson }}, critical: {{ critical_radius|tojson }}
+};
+window.DEFAULT_LANGUAGE = {{ default_language|tojson }};
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/dashboard.js?v={{ version }}"></script>
+</body>
+</html>
